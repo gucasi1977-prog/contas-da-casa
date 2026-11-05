@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f6f5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Contas">
+<title>Contas da Casa</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#f4f5f2; --card:#ffffff; --ink:#1d2421; --muted:#68736e; --line:#e2e5e1;
+  --brand:#1f6f5c; --brand-ink:#ffffff; --ok:#2e8b57; --late:#c0392b; --warn:#c77d12;
+  --soft-ok:#e5f3ea; --soft-late:#fbe9e7; --soft-warn:#fdf1df;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#121614; --card:#1c2220; --ink:#e8ece9; --muted:#9aa5a0; --line:#2c3431;
+    --brand:#3fa587; --brand-ink:#0d1210; --ok:#5cc58a; --late:#ff7b6b; --warn:#f0b04f;
+    --soft-ok:#1c3328; --soft-late:#3a2220; --soft-warn:#3a2e1a;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{max-width:640px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + env(safe-area-inset-top)) 0 8px}
+.month-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.month-nav h1{font-size:1.3rem;margin:0;text-align:center;flex:1;cursor:pointer}
+.month-nav h1 small{display:block;font-size:.75rem;color:var(--muted);font-weight:500}
+.icon-btn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:1.3rem;cursor:pointer}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 4px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.stat span{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.stat b{font-size:1rem;white-space:nowrap}
+.stat.ok b{color:var(--ok)} .stat.late b{color:var(--late)}
+.progress{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin:6px 0 2px}
+.progress i{display:block;height:100%;background:var(--ok);width:0}
+.tabs{display:flex;gap:6px;margin-top:8px}
+.tabs button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:.9rem}
+.tabs button.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.bill{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c,#888);border-radius:12px;padding:10px 12px}
+.bill .check{flex:none;width:34px;height:34px;border-radius:50%;border:2px solid var(--line);background:transparent;cursor:pointer;font-size:1.1rem;display:grid;place-items:center}
+.bill.paid .check{background:var(--ok);border-color:var(--ok);color:#fff}
+.bill .info{flex:1;min-width:0;cursor:pointer}
+.bill .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bill.paid .name{text-decoration:line-through;color:var(--muted)}
+.bill .meta{font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 8px}
+.bill .amt{text-align:right;font-weight:600;white-space:nowrap}
+.badge{font-size:.7rem;padding:1px 7px;border-radius:20px;font-weight:600}
+.badge.ok{background:var(--soft-ok);color:var(--ok)}
+.badge.late{background:var(--soft-late);color:var(--late)}
+.badge.warn{background:var(--soft-warn);color:var(--warn)}
+.empty{text-align:center;color:var(--muted);padding:40px 10px}
+.fab{position:fixed;right:max(16px,calc(50% - 304px));bottom:calc(20px + env(safe-area-inset-bottom));height:56px;padding:0 22px;border-radius:28px;border:0;background:var(--brand);color:var(--brand-ink);font-size:1rem;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.2);cursor:pointer;z-index:6}
+.section-title{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 4px}
+.row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.dot{width:14px;height:14px;border-radius:50%;flex:none}
+.row .grow{flex:1;min-width:0}
+.link-btn{background:none;border:0;color:var(--brand);font-weight:600;cursor:pointer;padding:6px}
+.danger{color:var(--late)}
+/* Modal */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.backdrop.open{display:flex}
+.sheet{background:var(--card);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+@media (min-width:700px){.backdrop{align-items:center}.sheet{border-radius:18px}}
+.sheet h2{margin:0 0 12px;font-size:1.2rem}
+label{display:block;font-size:.85rem;color:var(--muted);margin:12px 0 4px}
+input[type=text],input[type=number],input[type=month],input[type=date],select,textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
+textarea{min-height:60px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg label{flex:1;margin:0;text-align:center;padding:10px 6px;cursor:pointer;color:var(--ink);font-size:.9rem}
+.seg input{display:none}
+.seg label:has(input:checked){background:var(--brand);color:var(--brand-ink)}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.actions{display:flex;gap:10px;margin-top:18px}
+.btn{flex:1;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.red{color:var(--late)}
+.colors{display:flex;flex-wrap:wrap;gap:8px}
+.colors button{width:32px;height:32px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+.colors button.on{border-color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="month-nav">
+      <button class="icon-btn" id="prev" aria-label="Mês anterior">‹</button>
+      <h1 id="monthTitle" title="Ir para o mês atual"></h1>
+      <button class="icon-btn" id="next" aria-label="Próximo mês">›</button>
+    </div>
+    <div class="tabs">
+      <button data-tab="mes" class="on">Contas do mês</button>
+      <button data-tab="tipos">Tipos e contas</button>
+      <button data-tab="backup">Backup</button>
+    </div>
+  </header>
+  <main id="view"></main>
+</div>
+<button class="fab" id="fab">+ Nova conta</button>
+
+<div class="backdrop" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const KEY='contas-da-casa-v1';
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CORES=['#1f6f5c','#2a7de1','#8e44ad','#e67e22','#c0392b','#16a085','#d4a017','#7f8c8d','#e84393','#34495e'];
+const brl=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+// ---------- Dados ----------
+function defaults(){
+  const t=(n,c)=>({id:uid(),name:n,color:c});
+  return {types:[t('Água','#2a7de1'),t('Luz','#d4a017'),t('Internet','#8e44ad'),t('Aluguel / Condomínio','#1f6f5c'),t('Cartão de crédito','#c0392b'),t('Outros','#7f8c8d')],bills:[],payments:{}};
+}
+let db;
+function load(){
+  try{const raw=localStorage.getItem(KEY); db=raw?JSON.parse(raw):defaults();}catch(e){db=defaults();}
+  db.types=db.types||[];db.bills=db.bills||[];db.payments=db.payments||{};
+}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){toast('Não foi possível salvar no aparelho');}
+}
+
+// ---------- Datas ----------
+const now=new Date();
+let cur={y:now.getFullYear(),m:now.getMonth()}; // m: 0-11
+const ymKey=(y,m)=>y+'-'+String(m+1).padStart(2,'0');
+const parseYm=s=>{const [y,m]=s.split('-').map(Number);return {y,m:m-1};};
+const ymIndex=(y,m)=>y*12+m;
+const daysIn=(y,m)=>new Date(y,m+1,0).getDate();
+const todayKey=()=>{const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();};
+
+// Retorna {n,total} se a conta acontece no mês; senão null
+function occurrence(b,y,m){
+  const s=parseYm(b.start); const idx=ymIndex(y,m)-ymIndex(s.y,s.m);
+  if(idx<0) return null;
+  if(b.months && idx>=b.months) return null;
+  if(b.end){const e=parseYm(b.end); if(ymIndex(y,m)>ymIndex(e.y,e.m)) return null;}
+  return {n:idx+1,total:b.months||null};
+}
+function dueDate(b,y,m){return Math.min(b.day,daysIn(y,m));}
+function payment(b,y,m){return (db.payments[b.id]||{})[ymKey(y,m)];}
+function amountFor(b,y,m){const p=payment(b,y,m); return p&&p.amount!=null?p.amount:(Number(b.amount)||0);}
+function typeOf(id){return db.types.find(t=>t.id===id)||{name:'Sem tipo',color:'#888'};}
+function lastMonth(b){
+  const s=parseYm(b.start); let last=null;
+  if(b.months){const i=ymIndex(s.y,s.m)+b.months-1; last={y:Math.floor(i/12),m:i%12};}
+  if(b.end){const e=parseYm(b.end); if(!last||ymIndex(e.y,e.m)<ymIndex(last.y,last.m)) last=e;}
+  return last;
+}
+const ymLabel=o=>MESES[o.m].slice(0,3).toLowerCase()+'/'+o.y;
+
+// ---------- UI ----------
+let tab='mes';
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);}
+
+function render(){
+  const isNow=cur.y===now.getFullYear()&&cur.m===now.getMonth();
+  $('#monthTitle').innerHTML=`${MESES[cur.m]} ${cur.y}<small>${isNow?'mês atual':'toque para voltar ao mês atual'}</small>`;
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  $('#fab').style.display=tab==='backup'?'none':'';
+  if(tab==='mes') renderMonth(); else if(tab==='tipos') renderTypes(); else renderBackup();
+}
+
+function renderMonth(){
+  const {y,m}=cur;
+  const items=db.bills.map(b=>({b,o:occurrence(b,y,m)})).filter(x=>x.o)
+    .map(x=>({...x,day:dueDate(x.b,y,m),paid:!!payment(x.b,y,m),amt:amountFor(x.b,y,m)}))
+    .sort((a,b)=>a.paid-b.paid||a.day-b.day||a.b.name.localeCompare(b.b.name));
+  const total=items.reduce((s,x)=>s+x.amt,0), pago=items.filter(x=>x.paid).reduce((s,x)=>s+x.amt,0);
+  const tk=todayKey();
+  let html=`<div class="summary">
+    <div class="stat"><span>Total</span><b>${brl.format(total)}</b></div>
+    <div class="stat ok"><span>Pago</span><b>${brl.format(pago)}</b></div>
+    <div class="stat late"><span>Falta</span><b>${brl.format(total-pago)}</b></div>
+  </div><div class="progress"><i style="width:${total?Math.round(pago/total*100):0}%"></i></div>`;
+  if(!items.length){
+    html+=`<div class="empty">Nenhuma conta neste mês.<br>Toque em <b>+ Nova conta</b> para cadastrar.</div>`;
+  }else{
+    html+='<div class="list">'+items.map(x=>{
+      const t=typeOf(x.b.typeId); const key=y*10000+(m+1)*100+x.day;
+      let badge='';
+      if(x.paid){const p=payment(x.b,y,m);badge=`<span class="badge ok">Paga${p.date?' em '+fmtDate(p.date):''}</span>`;}
+      else if(key<tk) badge='<span class="badge late">Atrasada</span>';
+      else if(key===tk) badge='<span class="badge warn">Vence hoje</span>';
+      else if(key-tk<=3 && y===now.getFullYear() && m===now.getMonth()) badge='<span class="badge warn">Vence em breve</span>';
+      const parc=x.o.total?`${x.o.n}/${x.o.total}`:'mensal';
+      return `<div class="bill ${x.paid?'paid':''}" style="--c:${t.color}">
+        <button class="check" data-pay="${x.b.id}" aria-label="Marcar como paga">${x.paid?'✓':''}</button>
+        <div class="info" data-edit="${x.b.id}">
+          <div class="name">${esc(x.b.name)}</div>
+          <div class="meta"><span>Dia ${String(x.day).padStart(2,'0')}</span><span>${esc(t.name)}</span><span>${parc}</span>${badge}</div>
+        </div>
+        <div class="amt">${brl.format(x.amt)}</div>
+      </div>`;}).join('')+'</div>';
+  }
+  $('#view').innerHTML=html;
+}
+function fmtDate(iso){const [y,m,d]=iso.split('-');return d+'/'+m;}
+
+function renderTypes(){
+  let html=`<div class="section-title">Tipos de conta</div><div class="list" style="margin-top:4px">`;
+  html+=db.types.map(t=>{
+    const n=db.bills.filter(b=>b.typeId===t.id).length;
+    return `<div class="row"><span class="dot" style="background:${t.color}"></span><div class="grow">${esc(t.name)}<div class="hint">${n} conta${n===1?'':'s'}</div></div><button class="link-btn" data-type="${t.id}">Editar</button></div>`;
+  }).join('');
+  html+=`<button class="btn" id="addType">+ Novo tipo de conta</button></div>`;
+  html+=`<div class="section-title">Todas as contas cadastradas</div><div class="list" style="margin-top:4px">`;
+  if(!db.bills.length) html+='<div class="empty">Nenhuma conta cadastrada.</div>';
+  const nowIdx=ymIndex(now.getFullYear(),now.getMonth());
+  html+=db.bills.slice().sort((a,b)=>a.day-b.day).map(b=>{
+    const t=typeOf(b.typeId); const s=parseYm(b.start); const l=lastMonth(b);
+    const ended=l&&ymIndex(l.y,l.m)<nowIdx;
+    const dur=l?`de ${ymLabel(s)} até ${ymLabel(l)}`:`todo mês desde ${ymLabel(s)}`;
+    return `<div class="row" style="${ended?'opacity:.55':''}"><span class="dot" style="background:${t.color}"></span><div class="grow"><b>${esc(b.name)}</b> · ${brl.format(Number(b.amount)||0)}<div class="hint">Dia ${b.day} · ${dur}${ended?' · encerrada':''}</div></div><button class="link-btn" data-edit="${b.id}">Editar</button></div>`;
+  }).join('');
+  html+='</div>';
+  $('#view').innerHTML=html;
+}
+
+function renderBackup(){
+  $('#view').innerHTML=`
+  <div class="section-title">Seus dados</div>
+  <div class="row"><div class="grow">Tudo fica salvo só neste aparelho, sem internet. Se limpar os dados do navegador ou trocar de celular, as contas se perdem. Faça um backup de vez em quando.</div></div>
+  <div class="actions"><button class="btn primary" id="exp">Salvar backup</button><button class="btn" id="imp">Restaurar backup</button></div>
+  <input type="file" id="impFile" accept=".json,application/json" hidden>
+  <div class="section-title">Zona de perigo</div>
+  <button class="btn red" id="wipe" style="width:100%">Apagar todos os dados</button>
+  <p class="hint" style="margin-top:16px">${db.bills.length} contas · ${db.types.length} tipos cadastrados.</p>`;
+}
+
+// ---------- Modais ----------
+function openModal(html){$('#sheet').innerHTML=html;$('#modal').classList.add('open');}
+function closeModal(){$('#modal').classList.remove('open');}
+
+function billForm(b){
+  const isNew=!b;
+  b=b||{name:'',typeId:(db.types[0]||{}).id,amount:'',day:10,start:ymKey(cur.y,cur.m),months:null,notes:''};
+  const typeOpts=db.types.map(t=>`<option value="${t.id}" ${t.id===b.typeId?'selected':''}>${esc(t.name)}</option>`).join('');
+  openModal(`<h2>${isNew?'Nova conta':'Editar conta'}</h2>
+  <form id="billF">
+    <label>Nome da conta</label>
+    <input type="text" name="name" required placeholder="Ex.: Conta de luz" value="${esc(b.name)}">
+    <label>Tipo de conta</label>
+    <div style="display:flex;gap:8px"><select name="typeId" style="flex:1">${typeOpts}</select><button type="button" class="btn" id="qType" style="flex:none;padding:0 14px">+ Tipo</button></div>
+    <div class="two">
+      <div><label>Valor (R$)</label><input type="number" name="amount" step="0.01" min="0" inputmode="decimal" placeholder="0,00" value="${b.amount}"></div>
+      <div><label>Dia do vencimento</label><input type="number" name="day" min="1" max="31" required inputmode="numeric" value="${b.day}"></div>
+    </div>
+    <label>Começa em</label>
+    <input type="month" name="start" required value="${b.start}">
+    <label>Duração</label>
+    <div class="seg">
+      <label><input type="radio" name="dur" value="sempre" ${!b.months?'checked':''}>Todos os meses</label>
+      <label><input type="radio" name="dur" value="n" ${b.months?'checked':''}>Número de meses</label>
+    </div>
+    <div id="nBox" style="display:${b.months?'block':'none'}">
+      <label>Quantos meses?</label>
+      <input type="number" name="months" min="1" max="600" inputmode="numeric" value="${b.months||12}">
+      <div class="hint" id="durHint"></div>
+    </div>
+    <label>Observações (opcional)</label>
+    <textarea name="notes" placeholder="Código de barras, nº do cliente…">${esc(b.notes||'')}</textarea>
+    <div class="actions">
+      ${isNew?'':'<button type="button" class="btn red" id="delBill">Excluir</button>'}
+      <button type="button" class="btn" id="cancel">Cancelar</button>
+      <button type="submit" class="btn primary">Salvar</button>
+    </div>
+    ${!isNew?`<div class="actions" style="margin-top:8px"><button type="button" class="btn" id="endBill">Encerrar a partir de ${MESES[cur.m].toLowerCase()}</button></div>`:''}
+  </form>`);
+  const f=$('#billF');
+  const upd=()=>{
+    const n=f.dur.value==='n';$('#nBox').style.display=n?'block':'none';
+    if(n&&f.start.value&&f.months.value>0){const s=parseYm(f.start.value);const i=ymIndex(s.y,s.m)+Number(f.months.value)-1;$('#durHint').textContent=`Última parcela em ${MESES[i%12]} de ${Math.floor(i/12)}.`;}
+  };
+  f.addEventListener('change',upd);f.addEventListener('input',upd);upd();
+  $('#cancel').onclick=closeModal;
+  $('#qType').onclick=()=>{const name=prompt('Nome do novo tipo de conta:');if(!name||!name.trim())return;const t={id:uid(),name:name.trim(),color:CORES[db.types.length%CORES.length]};db.types.push(t);save();const o=new Option(t.name,t.id,true,true);f.typeId.add(o);};
+  f.onsubmit=e=>{
+    e.preventDefault();
+    const day=Math.max(1,Math.min(31,parseInt(f.day.value,10)||1));
+    const data={name:f.name.value.trim(),typeId:f.typeId.value,amount:f.amount.value===''?0:Math.round(parseFloat(f.amount.value)*100)/100,day,start:f.start.value,months:f.dur.value==='n'?Math.max(1,parseInt(f.months.value,10)||1):null,notes:f.notes.value.trim()};
+    if(!data.name){toast('Dê um nome à conta');return;}
+    if(isNew){db.bills.push({id:uid(),...data,created:new Date().toISOString()});}
+    else{Object.assign(b,data);}
+    save();closeModal();render();toast(isNew?'Conta criada':'Conta atualizada');
+  };
+  if(!isNew){
+    $('#delBill').onclick=()=>{if(!confirm(`Excluir "${b.name}" de todos os meses, incluindo o histórico de pagamentos?`))return;db.bills=db.bills.filter(x=>x!==b);delete db.payments[b.id];save();closeModal();render();toast('Conta excluída');};
+    $('#endBill').onclick=()=>{if(!confirm(`A conta "${b.name}" deixará de aparecer depois de ${MESES[cur.m]} de ${cur.y}. Continuar?`))return;b.end=ymKey(cur.y,cur.m);save();closeModal();render();toast('Conta encerrada');};
+  }
+}
+
+function payForm(b){
+  const {y,m}=cur; const p=payment(b,y,m);
+  if(p){ // desmarcar
+    if(!confirm(`Desmarcar "${b.name}" como paga em ${MESES[m]}?`))return;
+    delete db.payments[b.id][ymKey(y,m)]; save(); render(); return;
+  }
+  const d=new Date(); const today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  openModal(`<h2>Marcar como paga</h2><p style="margin:0">${esc(b.name)} · ${MESES[m]} ${y}</p>
+  <form id="payF">
+    <div class="two">
+      <div><label>Valor pago (R$)</label><input type="number" name="amount" step="0.01" min="0" inputmode="decimal" value="${amountFor(b,y,m)}"></div>
+      <div><label>Data do pagamento</label><input type="date" name="date" value="${today}"></div>
+    </div>
+    <div class="actions"><button type="button" class="btn" id="cancel">Cancelar</button><button type="submit" class="btn primary">Confirmar</button></div>
+  </form>`);
+  $('#cancel').onclick=closeModal;
+  $('#payF').onsubmit=e=>{e.preventDefault();const f=e.target;
+    (db.payments[b.id]=db.payments[b.id]||{})[ymKey(y,m)]={date:f.date.value||today,amount:f.amount.value===''?null:Math.round(parseFloat(f.amount.value)*100)/100};
+    save();closeModal();render();toast('Pagamento registrado');};
+}
+
+function typeForm(t){
+  const isNew=!t; t=t||{name:'',color:CORES[db.types.length%CORES.length]};
+  let color=t.color;
+  openModal(`<h2>${isNew?'Novo tipo de conta':'Editar tipo'}</h2><form id="typeF">
+    <label>Nome</label><input type="text" name="name" required value="${esc(t.name)}" placeholder="Ex.: Escola, Gás, Streaming">
+    <label>Cor</label><div class="colors">${CORES.map(c=>`<button type="button" data-c="${c}" style="background:${c}" class="${c===color?'on':''}"></button>`).join('')}</div>
+    <div class="actions">${isNew?'':'<button type="button" class="btn red" id="delType">Excluir</button>'}<button type="button" class="btn" id="cancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+  </form>`);
+  document.querySelectorAll('.colors button').forEach(btn=>btn.onclick=()=>{color=btn.dataset.c;document.querySelectorAll('.colors button').forEach(x=>x.classList.toggle('on',x===btn));});
+  $('#cancel').onclick=closeModal;
+  $('#typeF').onsubmit=e=>{e.preventDefault();const name=e.target.name.value.trim();if(!name)return;
+    if(isNew) db.types.push({id:uid(),name,color}); else Object.assign(t,{name,color});
+    save();closeModal();render();};
+  if(!isNew) $('#delType').onclick=()=>{
+    const n=db.bills.filter(b=>b.typeId===t.id).length;
+    if(n){alert(`Este tipo tem ${n} conta(s). Mude o tipo dessas contas antes de excluir.`);return;}
+    if(!confirm(`Excluir o tipo "${t.name}"?`))return;
+    db.types=db.types.filter(x=>x!==t);save();closeModal();render();};
+}
+
+// ---------- Eventos ----------
+$('#prev').onclick=()=>{cur.m--;if(cur.m<0){cur.m=11;cur.y--;}render();};
+$('#next').onclick=()=>{cur.m++;if(cur.m>11){cur.m=0;cur.y++;}render();};
+$('#monthTitle').onclick=()=>{cur={y:now.getFullYear(),m:now.getMonth()};render();};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
+$('#fab').onclick=()=>billForm();
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+// swipe entre meses
+let sx=null;
+$('#view').addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
+$('#view').addEventListener('touchend',e=>{if(sx==null||tab!=='mes')return;const dx=e.changedTouches[0].clientX-sx;sx=null;if(Math.abs(dx)>70){(dx<0?$('#next'):$('#prev')).click();}});
+$('#view').addEventListener('click',e=>{
+  const el=e.target.closest('[data-pay],[data-edit],[data-type],#addType,#exp,#imp,#wipe');
+  if(!el)return;
+  if(el.dataset.pay){payForm(db.bills.find(b=>b.id===el.dataset.pay));}
+  else if(el.dataset.edit){billForm(db.bills.find(b=>b.id===el.dataset.edit));}
+  else if(el.dataset.type){typeForm(db.types.find(t=>t.id===el.dataset.type));}
+  else if(el.id==='addType'){typeForm();}
+  else if(el.id==='exp'){
+    const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='contas-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+    toast('Backup salvo em Downloads');
+  }
+  else if(el.id==='imp'){$('#impFile').click();$('#impFile').onchange=ev=>{
+    const file=ev.target.files[0];if(!file)return;const r=new FileReader();
+    r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.bills)||!Array.isArray(d.types))throw 0;
+      if(!confirm('Substituir os dados atuais pelos do backup?'))return;db=d;db.payments=db.payments||{};save();render();toast('Backup restaurado');}
+      catch(_){alert('Arquivo de backup inválido.');}};
+    r.readAsText(file);};}
+  else if(el.id==='wipe'){if(confirm('Apagar TODAS as contas, tipos e pagamentos? Isso não pode ser desfeito.')&&confirm('Tem certeza?')){db=defaults();save();render();toast('Dados apagados');}}
+});
+
+load(); render();
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+})();
+</script>
+</body>
+</html>
